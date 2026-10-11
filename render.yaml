@@ -1,0 +1,25 @@
+# Render Blueprint: VoltShift backend (Express API + WebSocket /ws/grid-telemetry)
+services:
+  - type: web
+    name: voltshift-api
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      # Comma-separated allowed frontend origins, e.g. https://voltshift.vercel.app
+      - key: CORS_ORIGIN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ELECTRICITY_MAPS_KEY
+        sync: false
+      - key: EIA_API_KEY
+        sync: false
+      - key: NREL_API_KEY
+        sync: false

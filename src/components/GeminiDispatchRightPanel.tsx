@@ -1,3 +1,5 @@
+import { MessageSourceBadge } from './MessageSourceBadge';
+import { apiUrl } from '../lib/api';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   BrainCircuit,
@@ -94,7 +96,7 @@ Mode: ${isAutonomous ? 'Autonomous Optimization' : 'Unmanaged Schedule'}
 
 Ask me any question about how power is shifted, how tariffs are minimized, or how deadlines are protected.`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      source: 'gemini-3.8-flash',
+      source: 'system',
     },
   ]);
 
@@ -128,11 +130,12 @@ Ask me any question about how power is shifted, how tariffs are minimized, or ho
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/gemini/chat', {
+      const response = await fetch(apiUrl('/api/gemini/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: question,
+          history: messages.slice(-8).map((m) => ({ role: m.role, content: m.content })),
           simHour,
           isAutonomous,
           isPeaker,
@@ -172,7 +175,7 @@ Ask me any question about how power is shifted, how tariffs are minimized, or ho
         role: 'model',
         content: data.reply || 'Decision logged and optimized.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        source: data.source || 'gemini-3.8-flash',
+        source: data.source || 'unknown',
       };
 
       setMessages((prev) => [...prev, botMessage]);
@@ -182,7 +185,7 @@ Ask me any question about how power is shifted, how tariffs are minimized, or ho
         role: 'model',
         content: `At ${simHour.toString().padStart(2, '0')}:00, dispatch decisions are governed by ${explanation.primary_driver}. The system shifts power from high-carbon periods to minimize emissions while guaranteeing all delivery and compute SLAs.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        source: 'gemini-fallback',
+        source: 'network-error',
       };
       setMessages((prev) => [...prev, fallbackMessage]);
     } finally {
@@ -197,7 +200,7 @@ Ask me any question about how power is shifted, how tariffs are minimized, or ho
         role: 'model',
         content: `Conversation cleared. Standing by for questions regarding energy dispatch at ${simHour.toString().padStart(2, '0')}:00.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        source: 'gemini-3.8-flash',
+        source: 'system',
       },
     ]);
   };
@@ -552,6 +555,7 @@ Ask me any question about how power is shifted, how tariffs are minimized, or ho
                   >
                     {renderFormattedContent(m.content)}
                     <div className="flex items-center justify-end gap-1.5 mt-1 text-[10px] text-zinc-500 font-mono">
+                      {!isUser && <MessageSourceBadge source={m.source} />}
                       <span>{m.timestamp}</span>
                     </div>
                   </div>

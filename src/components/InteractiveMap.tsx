@@ -1,3 +1,4 @@
+import { apiUrl } from '../lib/api';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -130,7 +131,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       setNrelSolar(null);
       return;
     }
-    fetch(`/api/nrel/solar?lat=${active.coordinates[0]}&lon=${active.coordinates[1]}`)
+    fetch(apiUrl(`/api/nrel/solar?lat=${active.coordinates[0]}&lon=${active.coordinates[1]}`))
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d && typeof d.annual_ghi === 'number') {

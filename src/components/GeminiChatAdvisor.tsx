@@ -1,3 +1,5 @@
+import { MessageSourceBadge } from './MessageSourceBadge';
+import { apiUrl } from '../lib/api';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   BrainCircuit,
@@ -80,7 +82,7 @@ I continuously analyze real-time data from:
 
 Ask me anything about how energy shifts across time, how peaker spikes are mitigated, or how individual facilities are prioritized.`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      source: 'gemini-3.8-flash',
+      source: 'system',
     },
   ]);
 
@@ -112,11 +114,12 @@ Ask me anything about how energy shifts across time, how peaker spikes are mitig
     setIsLoading(true);
 
     try {
-      const resp = await fetch('/api/gemini/chat', {
+      const resp = await fetch(apiUrl('/api/gemini/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: question,
+          history: messages.slice(-8).map((m) => ({ role: m.role, content: m.content })),
           simHour,
           isAutonomous,
           isPeaker,
@@ -156,7 +159,7 @@ Ask me anything about how energy shifts across time, how peaker spikes are mitig
         role: 'model',
         content: data.reply || 'Decision logged and optimized.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        source: data.source || 'gemini-3.8-flash',
+        source: data.source || 'unknown',
       };
 
       setMessages((prev) => [...prev, botMsg]);
@@ -166,7 +169,7 @@ Ask me anything about how energy shifts across time, how peaker spikes are mitig
         role: 'model',
         content: `At simulation hour ${simHour}:00, the autonomous agent is optimizing load based on **${explanation.primary_driver}**. High-carbon fossil nodes are throttled to save emissions while keeping compute and delivery deadlines fully protected.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        source: 'gemini-fallback',
+        source: 'network-error',
       };
       setMessages((prev) => [...prev, fallbackMsg]);
     } finally {
@@ -181,7 +184,7 @@ Ask me anything about how energy shifts across time, how peaker spikes are mitig
         role: 'model',
         content: `History reset. Ready for questions regarding energy dispatch at ${simHour.toString().padStart(2, '0')}:00.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        source: 'gemini-3.8-flash',
+        source: 'system',
       },
     ]);
   };
@@ -331,6 +334,7 @@ Ask me anything about how energy shifts across time, how peaker spikes are mitig
                   )}
                 </div>
                 <div className="flex items-center justify-end gap-1.5 mt-1 text-[10px] text-zinc-500 font-mono">
+                  {!isUser && <MessageSourceBadge source={m.source} />}
                   <span>{m.timestamp}</span>
                 </div>
               </div>

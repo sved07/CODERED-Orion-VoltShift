@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { TelemetryPacket, ClientAction } from '../types';
+import { apiUrl, wsUrl } from '../lib/api';
 
 const INITIAL_PACKET: TelemetryPacket = {
   timestamp: new Date().toISOString(),
@@ -214,7 +215,7 @@ export function useGridSocket() {
       socketRef.current.send(JSON.stringify(action));
     } else {
       // Fallback via HTTP REST
-      fetch('/api/action', {
+      fetch(apiUrl('/api/action'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(action),
@@ -263,9 +264,7 @@ export function useGridSocket() {
     const connect = () => {
       if (unmounted) return;
       try {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/ws/grid-telemetry`;
-        const ws = new WebSocket(wsUrl);
+        const ws = new WebSocket(wsUrl('/ws/grid-telemetry'));
         socketRef.current = ws;
 
         ws.onopen = () => {
@@ -306,7 +305,7 @@ export function useGridSocket() {
     connect();
 
     // Initial fetch snapshot via REST as immediate bootstrap
-    fetch('/api/telemetry')
+    fetch(apiUrl('/api/telemetry'))
       .then((res) => res.json())
       .then((packet) => {
         if (!unmounted && packet && packet.zones) {
