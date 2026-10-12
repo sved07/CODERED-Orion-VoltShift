@@ -1,203 +1,153 @@
-# VoltShift: Autonomous Grid Load-Shifting Agent
+# VoltShift
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB.svg?logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![React 19](https://img.shields.io/badge/React-19.0-61DAFB.svg?logo=react&logoColor=black)](https://react.dev)
-[![Mapbox GL JS](https://img.shields.io/badge/Mapbox%20GL-3D-000000.svg?logo=mapbox&logoColor=white)](https://mapbox.com)
-[![Gemini 2.5 Flash](https://img.shields.io/badge/Gemini-2.5%20Flash-4285F4.svg?logo=google&logoColor=white)](https://ai.google.dev)
+**Carbon-aware load shifting for AI training and commercial EV charging.**
 
-VoltShift is an autonomous energy-systems AI agent orchestrating heavy industrial power workloads—specifically **hyperscale AI cluster distributed training batches** and **commercial EV delivery fleet charging depots**—across North American regional grid ISOs (**CAISO, ERCOT, PJM, MISO**) to minimize real-time carbon emissions ($gCO_2/kWh$), avoid fossil peaker plant dispatches, and exploit negative-priced renewable curtailment windows without breaching mission-critical SLAs.
+VoltShift is a demonstration app that models flexible industrial electricity use across four U.S. grid regions: CAISO, ERCOT, PJM, and MISO. It compares an autonomous schedule with a steady baseline, explains dispatch choices, and estimates carbon and energy-cost differences.
 
----
+> VoltShift is a simulator. It does not control real grid assets, data centers, or vehicle chargers. Grid conditions and savings are estimates when live data is unavailable.
 
-## System Architecture
+> **Credential cleanup required:** The current source includes third-party API key values in tracked files and fallback code. Treat them as exposed: revoke and replace them, remove the hard-coded values, and do not copy the existing `.env.example` into `.env`.
 
-```
-                  ┌──────────────────────────────────────────────┐
-                  │          VoltShift Autonomous Agent          │
-                  │   (Multi-Region Diurnal Balancing Engine)    │
-                  └───────────────▲───────────────▲──────────────┘
-                                  │               │
-            ┌─────────────────────┴───┐       ┌───┴────────────────────────┐
-            │   Regional Grid Feed    │       │     Industrial Workloads   │
-            │  (CAISO, ERCOT, PJM...) │       │  (AI Clusters & EV Depots) │
-            │  - Real-time gCO2/kWh   │       │  - Peak kW & Baseline kW   │
-            │  - Solar & Wind Curtail │       │  - SLA Deadline Constraints│
-            │  - Marginal Peaker Fuel │       │  - Flexibility Index (0-1) │
-            └─────────────────────────┘       └────────────────────────────┘
-                                  │
-                                  ▼
-         ┌───────────────────────────────────────────────────┐
-         │       Gemini AI Autonomous Decision Audit         │
-         │   (gemini-2.5-flash / gemini-3.8-flash Reasoning) │
-         │   - Primary Grid Catalyst Detection               │
-         │   - Natural Language Decision Explanations        │
-         │   - Forward 24-Hour Carbon Arbitrage Forecast     │
-         └────────────────────────┬──────────────────────────┘
-                                  │  WebSocket: /ws/grid-telemetry
-                                  ▼
-         ┌───────────────────────────────────────────────────┐
-         │       Mapbox 3D Geospatial Operator Console       │
-         │   - Color-coded ISO Polygons (<150g, 150-320g...) │
-         │   - 3D Extruded Data Centers & Fleet Depots       │
-         │   - Live Shift Badges (+kW BOOST / -kW THROTTLE)  │
-         │   - Real-Time Disruption Injection (Gas Peaker)   │
-         └───────────────────────────────────────────────────┘
-```
+## What you can explore
 
----
+- **Grid map:** Explore regional carbon intensity and renewable share, with facility locations.
+- **Workloads:** See AI training jobs and EV depot charging, their power use, progress, and deadlines.
+- **AI audit:** Read why the agent boosts, maintains, throttles, or defers each workload. Gemini explanations are optional; a built-in advisor is available as a fallback.
+- **ISO analytics:** Compare regions and review modeled grid and workload metrics.
+- **Scenario controls:** Change the simulated hour, compare autonomous dispatch with the unmanaged baseline, or trigger a gas peaker event.
 
-## Key Features
+## Run the main app
 
-1. **Autonomous Load Dispatch Engine**:
-   - **Green Surplus Arbitrage**: When regional renewable generation exceeds 60% or carbon intensity drops below 180 $gCO_2/kWh$, the agent activates `BOOST` mode, surging industrial loads up to 100% rated capacity.
-   - **Fossil Peaker Shedding**: When carbon surges above 350 $gCO_2/kWh$ (or upon marginal gas peaker activation), flexible workloads are `THROTTLED` by 50–80% or `DEFERRED`.
-   - **Hard SLA Enforcement**: Workloads calculate the hours remaining before daily batch / overnight charging deadlines ($T_{\text{deadline}} - T_{\text{sim}}$). If the safety buffer drops below 3 hours and quota progress is incomplete, the agent overrides emissions thrift and dispatches nominal or boost power to prevent SLA defaults.
+The repository root contains a Node.js server that serves the React app and its WebSocket telemetry together. This is the recommended way to run the demo. You do not need Python for this setup.
 
-2. **Gemini AI Audit Layer**:
-   - Evaluates grid telemetry using `@google/genai` with strict structured JSON schemas (`GeminiAgentExplanation`).
-   - Generates natural-language reasoning cards explaining why specific facilities were shifted or deferred.
-   - Projects 24-hour forward carbon intensity curves and recommends tactical dispatch windows.
+### Requirements
 
-3. **Mapbox 3D Geospatial Dashboard**:
-   - Interactive dark-theme 3D map with camera pitch, tilt, and fly-to animations.
-   - GeoJSON territory polygons color-coded by live carbon intensity:
-     - 🟢 **Green** ($< 150\ gCO_2/kWh$): Solar/wind curtailment window.
-     - 🟡 **Amber** ($150 - 320\ gCO_2/kWh$): Base combined-cycle gas generation.
-     - 🔴 **Red** ($> 320\ gCO_2/kWh$): High marginal coal/peaker emissions.
-   - 3D building extrusions (`fill-extrusion`) whose physical height scales in real-time with power draw ($kW$).
-   - Custom animated markers displaying power shift deltas (e.g., `+550 kW [BOOST]`, `-800 kW [THROTTLED]`).
+- Node.js 20.19+ or 22.12+
+- npm
+- Internet access to install packages and load online map tiles
 
-4. **Scenario & Disruption Controls**:
-   - 24-Hour simulation slider (00:00 - 23:00) with diurnal sun/moon indicators.
-   - "Simulate Gas Peaker Spike" disruption trigger for stress-testing grid resilience.
-   - "Autonomous Dispatch" vs. "Unmanaged Baseline" mode toggle with real-time KPI delta comparison.
-
----
-
-## Directory Structure
-
-```
-voltshift/
-├── backend/
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── main.py                  # FastAPI server & WebSocket /ws/grid-telemetry
-│   │   ├── config.py                # Environment configs & model parameters
-│   │   ├── models/
-│   │   │   ├── __init__.py
-│   │   │   └── schemas.py           # Pydantic schemas (GridZone, Workload, etc.)
-│   │   ├── agents/
-│   │   │   ├── __init__.py
-│   │   │   ├── grid_monitor.py      # Diurnal solar/wind model & Electricity Maps client
-│   │   │   ├── workload_manager.py  # SLA quota tracker & facility states
-│   │   │   └── dispatch_agent.py    # Autonomous dispatch optimization algorithm
-│   │   ├── ai/
-│   │   │   ├── __init__.py
-│   │   │   └── gemini_advisor.py    # Google GenAI (gemini-2.5-flash) structured reasoning
-│   │   └── data/
-│   │       └── mock_iso_telemetry.json
-│   ├── requirements.txt
-│   └── .env.example
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── MapboxView.tsx       # 3D geospatial visualization with building extrusions
-│   │   │   ├── AIAuditPanel.tsx     # Gemini autonomous decision audit stream
-│   │   │   ├── WorkloadList.tsx     # AI clusters & commercial EV fleet monitoring
-│   │   │   ├── MetricsBar.tsx       # Cumulative CO2 avoided & financial savings KPIs
-│   │   │   └── ControlBar.tsx       # Simulation scrubber & peaker disruption controls
-│   │   ├── hooks/
-│   │   │   └── useGridSocket.ts     # Real-time WebSocket hook with fallback sync
-│   │   ├── types/
-│   │   │   └── index.ts             # TypeScript interfaces matching backend models
-│   │   ├── App.tsx
-│   │   ├── index.css
-│   │   └── main.tsx
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── .env.example
-└── README.md
-```
-
----
-
-## Quickstart Guide
-
-### Option 1: AI Studio Full-Stack Runtime (Recommended)
-VoltShift includes a unified Node.js + Express + Vite proxy server (`server.ts`) that runs directly in the development container:
+Check your versions from the repository root:
 
 ```bash
-# 1. Install dependencies
-npm install
+node -v
+npm -v
+```
 
-# 2. Run the unified dev server (serves frontend & /ws/grid-telemetry on port 3000)
+Clone the repository if you have not already:
+
+```bash
+git clone https://github.com/sved07/CODERED-Orion-VoltShift.git
+cd CODERED-Orion-VoltShift
+```
+
+### Install and start
+
+```bash
+npm install --save-dev 'esbuild@^0.28.2'
 npm run dev
 ```
 
-### Option 2: Python FastAPI Backend + Vite Frontend
+The first command installs the dependencies and updates the root `package.json` to resolve its existing esbuild/Vite version conflict. It also creates or updates `package-lock.json`. Open the address printed by the server. By default, it is **http://localhost:3000**. Stop the server with **Ctrl+C**.
 
-#### 1. Start the Python Backend
+## Optional API configuration
+
+After removing hard-coded provider-key fallbacks from `server.ts`, create a **root-level `.env`** for server-only keys. Use newly issued credentials only:
+
+```dotenv
+GEMINI_API_KEY=your_new_gemini_key
+ELECTRICITY_MAPS_KEY=your_electricity_maps_key
+EIA_API_KEY=your_eia_key
+NREL_API_KEY=your_nrel_key
+```
+
+Restart the server after changing environment variables. When provider keys are absent or unavailable, the demo uses modeled grid data and rule-based explanations where supported.
+
+To use your own Mapbox basemap token, create a **root-level `.env.local`**:
+
+```dotenv
+VITE_MAPBOX_TOKEN=your_mapbox_public_token
+```
+
+Mapbox tokens used in a browser are public. Restrict the token to your local development URL and deployed site in your Mapbox account. Without a working Mapbox token, the map has a fallback basemap.
+
+## Alternative: Python FastAPI + Vite
+
+The repository also includes a separate implementation under `voltshift/backend` and `voltshift/frontend`. Use this option if you specifically want to run the FastAPI backend. Start the services in two terminals; do not start this stack alongside the root Node server on the same ports.
+
+### Terminal 1: backend
+
 ```bash
 cd voltshift/backend
-
-# Create and activate virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install requirements
-pip install -r requirements.txt
-
-# Run FastAPI with uvicorn
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
-FastAPI Swagger documentation will be available at `http://localhost:8000/docs`.
 
-#### 2. Start the React Frontend
+On Windows PowerShell, activate the environment with:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+### Terminal 2: frontend
+
 ```bash
 cd voltshift/frontend
-
-# Install dependencies
 npm install
-
-# Start Vite
 npm run dev
 ```
-Open `http://localhost:5173` in your browser.
 
----
+Open **http://localhost:5173**. The FastAPI docs are at **http://localhost:8000/docs**. For this frontend, the optional Mapbox variable is named `VITE_MAPBOX_TOKEN`; check `voltshift/frontend/.env.example` for the local setup details.
 
-## Environment Variables
+For Gemini explanations in this version, create `voltshift/backend/.env` with a newly issued `GEMINI_API_KEY`. Keep that file private and out of Git.
 
-### Backend (`voltshift/backend/.env`)
-```ini
-# Required for autonomous natural-language explanations and forward curves
-GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
+## Project layout
 
-# Optional: Real Electricity Maps API key (automatic fallback if omitted)
-ELECTRICITY_MAPS_KEY=""
-
-PORT=8000
-HOST="0.0.0.0"
+```text
+.
+├── server.ts                 # Main Node/Express server and WebSocket telemetry
+├── src/                      # Main React app, pages, components, and styles
+├── package.json              # Main app commands and dependencies
+└── voltshift/
+    ├── backend/              # Alternative FastAPI implementation
+    └── frontend/             # Vite frontend for the FastAPI implementation
 ```
 
-### Frontend (`voltshift/frontend/.env`)
-```ini
-# Optional: Mapbox GL public token for vector dark-v11 style
-# (Falls back to Carto Dark Matter raster basemaps if omitted)
-VITE_MAPBOX_TOKEN=""
+The main server streams telemetry at `/ws/grid-telemetry`. The alternative FastAPI backend exposes the same WebSocket path on port 8000.
+
+## Useful commands
+
+From the repository root:
+
+```bash
+npm run lint    # TypeScript check
+npm run build   # Build the main frontend
+npm run preview # Preview the built frontend
 ```
 
----
+For backend tests in the FastAPI version:
 
-## Technical Specifications
+```bash
+cd voltshift/backend
+source .venv/bin/activate
+python -m unittest discover -s tests -v
+```
 
-| Parameter | Value |
-|---|---|
-| **Simulation Resolution** | 1.5-second real-time telemetry tick loop |
-| **Grid ISOs Tracked** | CAISO (California), ERCOT (Texas), PJM (Mid-Atlantic), MISO (Midwest) |
-| **Monitored Facilities** | 4 AI Superclusters (9.3 MW nameplate) + 4 EV Commercial Depots (6.4 MW nameplate) |
-| **AI Model** | Google GenAI `gemini-2.5-flash` / `gemini-3.8-flash` |
-| **Average Carbon Abatement** | 30% to 42% emissions reduction vs. unmanaged flat baseline |
-| **SLA Default Rate** | 0.0% (Hard deadline override invariant) |
+## Troubleshooting
+
+- **`ENOENT` for `package.json`:** Open a terminal in the outer repository folder, beside `server.ts` and `src/`. Do not run the root commands from `voltshift/backend` or `voltshift/frontend`.
+- **`ERESOLVE` mentions `esbuild` and Vite:** Run the install command shown above, then `npm run dev`.
+- **Port 3000 is busy:** Stop the other process using it, or set `PORT=3001` in the root `.env` and open `http://localhost:3001`.
+- **Map tiles do not load:** Check your internet connection and Mapbox token restrictions. The dashboard can still show modeled grid data.
+- **Only built-in explanations appear:** Add a valid Gemini key to the root `.env`, restart the server, and check the server terminal for API errors.
+
+## Security
+
+Never commit private API keys or paste them into client-side code. Keep server keys in `.env`; do not put Gemini, Electricity Maps, EIA, or NREL keys in variables beginning with `VITE_`. The Mapbox public token is designed for browser use, but should still be restricted by URL.
+
+If a key has already been committed or shared, revoke it with its provider and replace it. Remove any hard-coded provider key values from source files and `.env.example` before publishing the repository.
+
+## Data notes
+
+Grid forecasts, renewable shares, workload flexibility, and savings are simulation outputs unless a configured provider supplies current data. Cost savings use modeled energy prices, not a utility bill or demand-charge calculation. Results are for demonstration and comparison, not operational decisions.
