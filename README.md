@@ -142,12 +142,6 @@ python -m unittest discover -s tests -v
 - **Map tiles do not load:** Check your internet connection and Mapbox token restrictions. The dashboard can still show modeled grid data.
 - **Only built-in explanations appear:** Add a valid Gemini key to the root `.env`, restart the server, and check the server terminal for API errors.
 
-## Security
-
-Never commit private API keys or paste them into client-side code. Keep server keys in `.env`; do not put Gemini, Electricity Maps, EIA, or NREL keys in variables beginning with `VITE_`. The Mapbox public token is designed for browser use, but should still be restricted by URL.
-
-If a key has already been committed or shared, revoke it with its provider and replace it. Remove any hard-coded provider key values from source files and `.env.example` before publishing the repository.
-
 ## Data notes
 
 Grid forecasts, renewable shares, workload flexibility, and savings are simulation outputs unless a configured provider supplies current data. Cost savings use modeled energy prices, not a utility bill or demand-charge calculation. Results are for demonstration and comparison, not operational decisions.
